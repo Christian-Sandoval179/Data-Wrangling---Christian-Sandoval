@@ -7,11 +7,8 @@ This is an R Markdown format used for publishing markdown documents to
 GitHub. When you click the **Knit** button all R code chunks are run and
 a markdown file (.md) suitable for publishing to GitHub is generated.
 
-## Including Code
-
-You can include R code in the document as follows:
-
 ``` r
+## ----------------- PROBLEMA 1 ------------------------------------
 library(readxl)
 ```
 
@@ -99,11 +96,84 @@ head(data_unificada)
     ## 5  10000005 CHICHARRONERIA~     76001     1644 Juan ~ 411        30 Camio~ 01-2~
     ## 6  10000006 UBIQUO LABS ||~     76001     1827 Luis ~ 457.       30 Camio~ 01-2~
 
-## Including Plots
+``` r
+paste("El numero de filas del archivo es :" ,nrow(data_unificada) )
+```
 
-You can also embed plots, for example:
+    ## [1] "El numero de filas del archivo es : 2180"
 
-![](lab-1_files/figure-gfm/pressure-1.png)<!-- -->
+``` r
+paste("El numero de columnas del archivo es :" ,ncol(data_unificada) )
+```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
+    ## [1] "El numero de columnas del archivo es : 9"
+
+``` r
+## ----------------- PROBLEMA 2 ------------------------------------
+
+lista_vectores <- list(vec1 = c(1,2,3,3,4,4,5,8,9,7) , 
+                       vec2 = c(3,4,3,3,11,16,3,20) , 
+                       vec3 = c(22,35,35,21,21,35,99))
+
+calculo_moda <- function(vector) {
+  frecuencias <- table(vector)
+  moda <- as.numeric(names(frecuencias[frecuencias == max(frecuencias)]))
+  return(moda)
+}
+
+moda_vectores <- lapply(lista_vectores, calculo_moda)
+moda_vectores
+```
+
+    ## $vec1
+    ## [1] 3 4
+    ## 
+    ## $vec2
+    ## [1] 3
+    ## 
+    ## $vec3
+    ## [1] 35
+
+``` r
+## ----------------- PROBLEMA 3 ------------------------------------
+
+datos_parqueo2019 <- read_delim("parqueo2019.txt" , "|")
+```
+
+    ## New names:
+    ## * `` -> `...11`
+
+    ## Warning: One or more parsing issues, call `problems()` on your data frame for details,
+    ## e.g.:
+    ##   dat <- vroom(...)
+    ##   problems(dat)
+
+    ## Rows: 2435294 Columns: 11
+    ## -- Column specification --------------------------------------------------------
+    ## Delimiter: "|"
+    ## chr (8): MES, NOMBRE_DEPARTAMENTO, NOMBRE_MUNICIPIO, MODELO_VEHICULO, LINEA_...
+    ## dbl (2): ANIO_ALZA, CANTIDAD
+    ## lgl (1): ...11
+    ## 
+    ## i Use `spec()` to retrieve the full column specification for this data.
+    ## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+head(datos_parqueo2019, 10)
+```
+
+    ## # A tibble: 10 x 11
+    ##    ANIO_ALZA MES   NOMBRE_DEPARTAMENTO NOMBRE_MUNICIPIO MODELO_VEHICULO
+    ##        <dbl> <chr> <chr>               <chr>            <chr>          
+    ##  1      2007 05    HUEHUETENANGO       "HUEHUETENANGO"  2007           
+    ##  2      2007 05    EL PROGRESO         "EL JICARO"      2007           
+    ##  3      2007 05    SAN MARCOS          "OCOS"           2007           
+    ##  4      2007 05    ESCUINTLA           "SAN JOS\xc9"    2006           
+    ##  5      2007 05    JUTIAPA             "MOYUTA"         2007           
+    ##  6      2007 05    GUATEMALA           "FRAIJANES"      1997           
+    ##  7      2007 05    QUETZALTENANGO      "QUETZALTENANGO" 2007           
+    ##  8      2007 05    SUCHITEPEQUEZ       "CHICACAO"       2007           
+    ##  9      2007 05    ESCUINTLA           "ESCUINTLA"      2007           
+    ## 10      2007 05    GUATEMALA           "MIXCO"          2007           
+    ## # i 6 more variables: LINEA_VEHICULO <chr>, TIPO_VEHICULO <chr>,
+    ## #   USO_VEHICULO <chr>, MARCA_VEHICULO <chr>, CANTIDAD <dbl>, ...11 <lgl>
