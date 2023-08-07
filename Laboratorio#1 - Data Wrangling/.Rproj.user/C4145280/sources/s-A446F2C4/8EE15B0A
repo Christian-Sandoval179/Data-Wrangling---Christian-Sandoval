@@ -1,7 +1,7 @@
 {
     "id": "8EE15B0A",
-    "path": null,
-    "project_path": null,
+    "path": "~/Documentos Christian Sandoval/U/Sexto Semestre/Data-Wrangling---Christian-Sandoval/Laboratorio#1 - Data Wrangling/lab#1.Rmd",
+    "project_path": "lab#1.Rmd",
     "type": "r_markdown",
     "hash": "1097347110",
     "contents": "",
@@ -18,11 +18,11 @@
         "last_setup_crc32": "A446F2C4bb338d19"
     },
     "folds": "",
-    "lastKnownWriteTime": 9852100933124210,
-    "encoding": "",
+    "lastKnownWriteTime": 1691367099,
+    "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1691366946105,
+    "last_content_update": 1691367099889,
     "read_only": false,
     "read_only_alternatives": []
 }
