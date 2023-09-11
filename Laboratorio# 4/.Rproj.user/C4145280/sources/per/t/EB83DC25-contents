@@ -1,0 +1,57 @@
+#
+# This is the user-interface definition of a Shiny web application. You can
+# run the application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+
+library(shiny)
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+
+    # Application title
+    titlePanel("UI dinamico, UpdateInput"),
+    
+    tabsetPanel(
+      tabPanel('Ejmeplo 1',
+               numericInput('lim_inf', label = 'Ingrese limite inferior', value =0),
+               numericInput('lim_sup', label = 'Ingrese limite superior', value =15),
+               sliderInput('sl1', 'seleccione: ', value = 5, min = 0, max = 15)
+               ),
+     
+    
+      tabPanel('Ejmeplo 2',
+               sliderInput('sl2','Seleccione', min = -10, max = 10, value = 0),
+               sliderInput('sl3','Seleccione', min = -10, max = 10, value = 0),
+               sliderInput('sl4','Seleccione', min = -10, max = 10, value = 0),
+               sliderInput('sl5','Seleccione', min = -10, max = 10, value = 0),
+               sliderInput('sl6','Seleccione', min = -10, max = 10, value = 0),
+               actionButton('limpiar','limpiar')),
+      
+      tabPanel('Ejmeplo 3',
+              
+               numericInput('n_value', 'Valor', value = 5),
+               actionButton('correr', label = 'Correr')),
+      
+      tabPanel('Ejmeplo 4',
+               
+              numericInput('ninput', 'Valor', value = 5)),
+      
+      tabPanel('Ejmeplo 5',
+               
+               numericInput('celsius', 'Ingrese grados celsius', value = NULL , step = 1),
+               numericInput('fahrenheit', 'Ingrese grados fahrenheit ', value = NULL , step = 1),
+               ),
+      tabPanel('Ejmeplo 6', 
+                selectInput('dist', 'Distribucion',
+                            choices = c('normal', 'uniforme','exponencial')),
+                numericInput('nRandom', 'Numero de muestras', value = 100),
+               )
+               
+   
+
+    ),
+))

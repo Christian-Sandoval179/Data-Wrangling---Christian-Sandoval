@@ -1,0 +1,5 @@
+"0","data <- read_rds(""parcial_anonimo.rds"")
+"
+"2","Error in read_rds(""parcial_anonimo.rds"") : 
+  could not find function ""read_rds""
+"

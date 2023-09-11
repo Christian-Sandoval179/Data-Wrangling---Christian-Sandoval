@@ -46,6 +46,18 @@ cantidad_pilotos <- entregas_piloto %>%
   summarise(Meses_cumplidos = n())  %>% 
   mutate(Porcentaje = Meses_cumplidos / 11)
 
+
+cantidad_pilotos$ID <- seq(1, nrow(cantidad_pilotos))
+  promedio_meses <- mean(cantidad_pilotos$Meses_cumplidos)
+  
+  # Grafico de meses cumplidos por piloto
+  ggplot(cantidad_pilotos, aes(x = ID, y = Meses_cumplidos)) +
+    geom_bar(stat = "identity", fill = "steelblue1") + 
+    geom_text(aes(label = Meses_cumplidos), vjust = -0.5, size = 3) +
+    labs(x = " ID Piloto", y = "Meses Cumplidos", title = "Cumplimiento de Politica de Entregas")+
+    scale_x_continuous(breaks = 1:9)
+  
+
 ## Entregas por mes
 entregas_mes <- data %>%
   group_by(MES) %>% 
@@ -68,7 +80,7 @@ ggplot(data, aes(x = MES, y = Q, color = CREDITO)) +
 
 
 ##Hipotesis 3
-## Cantidad de devoluciones
+## Cantidad de devoluciones han aumentado en ciertos meses
 
 
 devoluciones <- data %>% 
@@ -76,4 +88,54 @@ devoluciones <- data %>%
   filter(CATEGORIA == "Devolucion") %>% 
   summarise(n_devoluciones = n())
 
+ggplot(devoluciones, aes(x = MES, y = n_devoluciones)) +
+  geom_bar(stat = "sum", fill = "red", alpha = 0.6) +
+  labs(x = "Mes", y = "Numero de devoluciones", title = "Cantidad de Devoluciones por Mes")
 
+
+#Las devoluciones estan relacionadas con la cantidad de unidades que se han entregado
+
+
+devolucion_totales <- devolucion %>% 
+  group_by(MES) %>% 
+  summarise(devolucion_total = sum(CANTIDAD))
+
+
+## Grafica de devoluciones (unidades) por mes   
+
+
+ggplot(devolucion_totales, aes(x = MES, y = devolucion_total)) +
+  geom_bar(stat = "sum", position = "stack", fill = "lightgreen") + 
+  geom_text(aes(label = devolucion_total), position = position_stack(vjust = 0.5), color = "black", size = 3) +
+  labs(x = "Mes", y = "Unidades Devueltas", title = "Cantidad de Unidades Devueltas por Mes") +
+  scale_x_continuous(breaks = 1:9)+
+  theme_minimal()
+
+
+
+## Hipotesis 4, no todos los medios de transportes son rentables
+D
+ingresos_por_unidad <- data %>%
+  group_by(UNIDAD) %>% 
+  filter(CATEGORIA == 'Despacho') %>% 
+  summarise(ingresos_totales = sum(Q)) %>%
+  mutate(porcentaje_ingresos = ingresos_totales / sum(ingresos_totales) * 100)
+
+## Grafica de ingresos por unidad
+
+ingresos_por_unidad$porcentaje_ingresos <- round(ingresos_por_unidad$porcentaje_ingresos)
+
+ggplot(ingresos_por_unidad, aes(x = factor(1), y = porcentaje_ingresos, fill = UNIDAD, label = paste(porcentaje_ingresos, "%"))) +
+  geom_bar(stat = "identity") +
+  geom_text(position = position_stack(vjust = 0.5), color = "white", size = 3)+
+  labs(x = "Barra", y = "Porcentaje de Ingresos", title = "Distribución de Ingresos por Unidad") +
+  scale_fill_manual(values = c("#FFA500", "#1E90FF","#339966")) +
+  theme_minimal()
+
+
+entregas_por_camion <- data %>% 
+  group_by(UNIDAD) %>% 
+  summarise(entregas_totales = n())
+
+
+## Entender la relacion 80/20 de la empresa

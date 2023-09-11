@@ -1,0 +1,60 @@
+#
+# This is the server logic of a Shiny web application. You can run the
+# application by clicking 'Run App' above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
+
+library(shiny)
+
+function(input,output, session){
+  
+    observeEvent(input$lim_inf,{
+      updateSliderInput(session, 'sl1', min = input$lim_inf)    
+      })
+  
+    observeEvent(input$lim_sup,{
+      updateSliderInput(session, 'sl1', max = input$lim_sup)    
+      })
+    
+    observeEvent(input$limpiar, {
+      updateSliderInput(session, 'sl2', value = 0)
+      updateSliderInput(session, 'sl3', value = 0) 
+      updateSliderInput(session, 'sl4', value = 0) 
+      updateSliderInput(session, 'sl5', value = 0) 
+      updateSliderInput(session, 'sl6', value = 0) 
+    })
+    ## Ejemplo 3
+    
+    observeEvent(input$n_value,{
+     etiqueta = 'Hola'
+     if(input$n_value ==1){
+       etiqueta = 'Correr una vez'
+     }else {
+       etiqueta = paste0('Correr ', input$n_value , ' veces')
+     }
+     updateActionButton(session, 'correr', label = etiqueta)
+    })
+    
+    ## Ejemplo 4
+    observeEvent(input$ninput, {
+        updateNumericInput(session, 'ninput', value = input$ninput + 1)
+    })
+    
+    ## Ejemplo 5
+    observeEvent(input$celsius, {
+      fahrenheit = input$celsius * (9/5) + 32
+      updateNumericInput(session, 'fahrenheit', value = fahrenheit)
+    })
+    
+    observeEvent(input$fahrenheit, {
+      celsius = (input$fahrenheit -32) * 5/9
+      updateNumericInput(session, 'celsius', value = celsius)
+    })
+    
+    ## Ejemplo 6
+    
+    
+}
