@@ -189,6 +189,8 @@ pre code {
 <pre><code>## Warning: package &#39;readr&#39; was built under R version 4.1.3</code></pre>
 <pre class="r"><code>library(readxl)</code></pre>
 <pre><code>## Warning: package &#39;readxl&#39; was built under R version 4.1.3</code></pre>
+<pre class="r"><code>library(nycflights13)</code></pre>
+<pre><code>## Warning: package &#39;nycflights13&#39; was built under R version 4.1.3</code></pre>
 </div>
 <div id="parte-1" class="section level2">
 <h2>Parte 1</h2>
@@ -220,9 +222,156 @@ colnames(data) &lt;- c(&quot;fecha_creacion&quot;, &quot;hora_creacion&quot;, &q
 
 #Convierto todas las fechas al mismo formato
 
-data$fecha_creacion &lt;- as.Date(as.numeric(data$fecha_creacion), origin = &quot;1899-12-30&quot;)</code></pre>
-<pre><code>## Warning in as.Date(as.numeric(data$fecha_creacion), origin = &quot;1899-12-30&quot;): NAs
-## introduced by coercion</code></pre>
+
+data &lt;- data %&gt;% 
+  mutate(
+    fecha_creacion_origen = fecha_creacion,
+    fecha_creacion = dmy(fecha_creacion),
+    fecha_creacion_origen = as.Date(as.numeric(fecha_creacion_origen), origin = &quot;1899-12-30&quot;),
+    fecha_final_origen = fecha_final,
+    fecha_final = dmy(fecha_final),
+    fecha_final_origen = as.Date(as.numeric(fecha_final_origen), origin = &quot;1899-12-30&quot;)
+  )</code></pre>
+<pre><code>## Warning: There were 4 warnings in `mutate()`.
+## The first warning was:
+## i In argument: `fecha_creacion = dmy(fecha_creacion)`.
+## Caused by warning:
+## !  104237 failed to parse.
+## i Run `dplyr::last_dplyr_warnings()` to see the 3 remaining warnings.</code></pre>
+<pre class="r"><code>data &lt;- data %&gt;% 
+  mutate(
+    fecha_creacion_f = coalesce(fecha_creacion_origen, fecha_creacion),
+    fecha_final_f = coalesce(fecha_final_origen, fecha_final)
+  )
+
+
+data &lt;- data %&gt;% 
+  select(-fecha_creacion, -fecha_creacion_origen, -fecha_final_origen, -fecha_creacion_f)
+
+
+
+## vemos los meses en los que existe mayor cantidad de llamadas por codigo
+data &lt;- data %&gt;%
+  mutate(mes = month(fecha_final_f))
+
+
+resultado &lt;- data %&gt;%
+  group_by(Cod, mes) %&gt;%
+  summarise(cantidad_llamadas = n())</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;Cod&#39;. You can override using the `.groups`
+## argument.</code></pre>
+<pre class="r"><code>resultado &lt;- resultado %&gt;%
+  group_by(Cod) %&gt;%
+  filter(cantidad_llamadas == max(cantidad_llamadas))
+
+print(resultado)</code></pre>
+<pre><code>## # A tibble: 7 x 3
+## # Groups:   Cod [7]
+##   Cod                            mes cantidad_llamadas
+##   &lt;chr&gt;                        &lt;dbl&gt;             &lt;int&gt;
+## 1 0                                7              1463
+## 2 Actualización de Información     5              1691
+## 3 Cancelaciones                    3              4092
+## 4 Cobros                           1               688
+## 5 Consultas                       10             10790
+## 6 Empresarial                     10              3136
+## 7 Otros/Varios                     1              1129</code></pre>
+<pre class="r"><code>## Vemos el dia mas ocupado de la semana
+
+
+data &lt;- data %&gt;%
+  mutate(dia_semana = weekdays(fecha_final_f))
+
+
+resultado2 &lt;- data %&gt;%
+  group_by(dia_semana) %&gt;%
+  summarise(cantidad_llamadas = n())
+
+
+dia_mas_ocupado &lt;- resultado2 %&gt;%
+  filter(cantidad_llamadas == max(cantidad_llamadas)) %&gt;%
+  select(dia_semana)
+
+print(resultado2)</code></pre>
+<pre><code>## # A tibble: 7 x 2
+##   dia_semana cantidad_llamadas
+##   &lt;chr&gt;                  &lt;int&gt;
+## 1 Friday                 37409
+## 2 Monday                 37501
+## 3 Saturday               37614
+## 4 Sunday                 38254
+## 5 Thursday               37726
+## 6 Tuesday                37710
+## 7 Wednesday              37511</code></pre>
+<pre class="r"><code>## Mes mas ocupado
+
+
+resultado3 =  data %&gt;% 
+  group_by(mes) %&gt;% 
+   summarise(cantidad_comunicaciones = n())
+
+mes_mas_ocupado &lt;- resultado3 %&gt;%
+  filter(cantidad_comunicaciones == max(cantidad_comunicaciones)) %&gt;%
+  select(mes)
+
+  paste0(&quot;El mes mas ocupado es el mes: &quot;, mes_mas_ocupado)</code></pre>
+<pre><code>## [1] &quot;El mes mas ocupado es el mes: 3&quot;</code></pre>
+<pre class="r"><code>## Existe una gran concentracion de llamadas en el mes de Octubre
+  
+  
+## Duracion de la llamada promedio
+  data &lt;- data %&gt;%
+    filter(call == 1) %&gt;% 
+  mutate(duracion_llamada_minutos = as.numeric(difftime(hora_final, hora_creacion, units = &quot;mins&quot;)))
+
+  promedio_duracion &lt;- mean(data$duracion_llamada_minutos)
+    
+  paste0(&quot;La duracion promedio de llamada es de: &quot;, promedio_duracion)</code></pre>
+<pre><code>## [1] &quot;La duracion promedio de llamada es de: 14.557903930131&quot;</code></pre>
+<pre class="r"><code>## Tabla de frecuencias
+  
+  tabla_f &lt;- table(data$duracion_llamada_minutos)
+  
+  tabla_df &lt;- as.data.frame(tabla_f)
+  colnames(tabla_df) &lt;- c(&quot;Duracion_Llamada&quot;, &quot;Frecuencia&quot;)
+  
+  print(tabla_df)</code></pre>
+<pre><code>##    Duracion_Llamada Frecuencia
+## 1                 0        221
+## 2                 1        211
+## 3                 2        173
+## 4                 3        195
+## 5                 4        193
+## 6                 5        184
+## 7                 6        194
+## 8                 7        197
+## 9                 8        212
+## 10                9        166
+## 11               10        190
+## 12               11        197
+## 13               12        169
+## 14               13        163
+## 15               14        203
+## 16               15        188
+## 17               16        181
+## 18               17        178
+## 19               18        186
+## 20               19        190
+## 21               20        179
+## 22               21        205
+## 23               22        175
+## 24               23        192
+## 25               24        186
+## 26               25        174
+## 27               26        157
+## 28               27        173
+## 29               28        158
+## 30               29        171
+## 31               30        164</code></pre>
+<pre class="r"><code>  ## Como comentario adicional podemos ver que la mayor frecuencia se concentra en su media que son los 14 minutos promedio por llamada
+  
+  
+##</code></pre>
 </div>
 <div id="parte-3" class="section level2">
 <h2>Parte 3</h2>
@@ -266,6 +415,23 @@ signo_zodiacal &lt;- obtener_signo(fecha_nacimiento)
 
 paste0(&quot; Tu signo zodiacal es: &quot; , signo_zodiacal , &quot; dada tu fecha de nacimiento: &quot; , fecha_nacimiento)</code></pre>
 <pre><code>## [1] &quot; Tu signo zodiacal es: Aries dada tu fecha de nacimiento: 2002-04-04&quot;</code></pre>
+</div>
+<div id="parte-4" class="section level2">
+<h2>Parte 4</h2>
+<pre class="r"><code>flights &lt;- flights
+
+flights &lt;- flights %&gt;% 
+  mutate(dep_time_enhora = sprintf(&quot;%02d:%02d&quot;, dep_time %/% 100, dep_time %% 100)) %&gt;% 
+  mutate(arr_time_enhora = sprintf(&quot;%02d:%02d&quot;, arr_time %/% 100, arr_time %% 100)) %&gt;% 
+  mutate(sched_dep_time_enhora = sprintf(&quot;%02d:%02d&quot;, sched_dep_time %/% 100, sched_dep_time %% 100)) %&gt;% 
+  mutate(sched_arr_time_enhora = sprintf(&quot;%02d:%02d&quot;, sched_arr_time %/% 100, sched_arr_time %% 100))
+
+
+# Encontrando el delay total seria:
+
+
+flights &lt;- flights %&gt;% 
+  mutate(delay_total = dep_delay + arr_delay)</code></pre>
 </div>
 
 
