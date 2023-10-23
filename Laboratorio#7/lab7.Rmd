@@ -1,0 +1,345 @@
+---
+title: "Laboratorio#7"
+author: "Christian Sandoval"
+date: "10/20/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+```{r}
+library(dplyr)
+library(readr)
+library(readxl)
+library(lubridate)
+library(ggplot2)
+library(leaflet)
+
+```
+
+## Exploracion de datos
+
+Empezamos con la lectura de datos y un poco de la exploracion.
+
+```{r echo=FALSE}
+data <- read.csv("c1.csv")
+
+#Vemos que informacion nos dan 
+head(data,10)
+str(data)
+
+
+# Vemos los campos vacios de cada columna
+data %>% summarise_all(~ sum(is.na(.)))
+
+
+# Supongamos que tienes un dataframe llamado df y deseas eliminar la columna "ColumnaAEliminar"
+data <- data %>% 
+  select(-X, -X.1, -X.2 , -X.3 , -X.4, -X.5)
+
+
+#Vemos las diferentes categorias 
+data_categorias <- data %>% 
+  distinct(Cod)
+# cambio nombres para entenderlas mas facil
+data <- data %>%
+  rename('5-30' = `X5.30`,
+         '30-45' = `X30.45`,
+         '45-75' = `X45.75`,
+         '75-120' = `X75.120`,
+         '+120' = `X120.`)
+
+```
+
+## Ganancias 2017
+```{r}
+data$Camion_5 <- as.numeric(gsub("Q","",data$Camion_5))
+data$Pickup <- as.numeric(gsub("Q","",data$Pickup))
+data$Moto <- as.numeric(gsub("Q","",data$Moto))
+data$factura <- as.numeric(gsub("Q","",data$factura))
+
+
+costos_camion <- sum(data$Camion_5, na.rm = TRUE)
+costos_pickup <- sum(data$Pickup, na.rm = TRUE)
+costos_moto <- sum(data$Moto, na.rm = TRUE)
+
+ventas <- sum(data$factura)
+costos_totales <- costos_camion + costos_moto + costos_pickup
+
+
+utilidad_neta <- ventas - costos_totales
+
+utilidad_2018 <- utilidad_neta - (utilidad_neta * 0.25)
+
+meta_utilidad <- utilidad_neta * (1 + 0.25)
+  
+
+```
+
+## Registros de transporte por separado
+```{r}
+
+# Para los camiones
+data_camiones <- data %>% 
+  filter(!is.na(Camion_5)) %>% 
+  select(-Pickup,-Moto,-Lat,Long, -directoPickup, -directoMoto,-fijoPickup, -fijoMoto)
+# Para los Pickups
+data_pickups <- data %>% 
+  filter(!is.na(Pickup)) %>% 
+  select(-Camion_5,-Moto,-Lat,Long, -directoCamion_5, -directoMoto,-fijoCamion_5, -fijoMoto)
+#Para las motos
+data_motos <- data %>% 
+  filter(!is.na(Moto)) %>% 
+  select(-Camion_5,-Pickup,-Lat,Long, -directoCamion_5, -directoPickup,-fijoCamion_5, -fijoPickup)
+
+
+# Verificamos que hayamos extraido toda la informacion de forma correcta
+nrow(data_camiones) + nrow(data_motos) + nrow(data_pickups) == nrow(data)
+```
+
+## Análsis de viajes
+```{r}
+resultados_camion <- data_camiones %>%
+  group_by(Cod) %>%
+  summarise(
+    Viajes_5_30 = sum(`5-30` == " x "),
+    Viajes_30_45 = sum(`30-45` == " x "),
+    Viajes_45_75 = sum(`45-75` == " x "),
+    Viajes_75_120 = sum(`75-120` == " x "),
+    Viajes_120_plus = sum(`+120` == " x ")
+  )
+
+head(resultados_camion)
+
+resultados_pickup <- data_pickups %>%
+  group_by(Cod) %>%
+  summarise(
+    Viajes_5_30 = sum(`5-30` == " x "),
+    Viajes_30_45 = sum(`30-45` == " x "),
+    Viajes_45_75 = sum(`45-75` == " x "),
+    Viajes_75_120 = sum(`75-120` == " x "),
+    Viajes_120_plus = sum(`+120` == " x ")
+  )
+
+head(resultados_pickup)
+
+
+resultados_moto <- data_motos %>%
+  group_by(Cod) %>%
+  summarise(
+    Viajes_5_30 = sum(`5-30` == " x "),
+    Viajes_30_45 = sum(`30-45` == " x "),
+    Viajes_45_75 = sum(`45-75` == " x "),
+    Viajes_75_120 = sum(`75-120` == " x "),
+    Viajes_120_plus = sum(`+120` == " x ")
+  )
+
+head(resultados_moto)
+
+```
+
+
+## Análsis de costos
+```{r}
+
+costos_por_servicio <- data %>%
+  group_by(Cod) %>%
+  summarise(
+    Costo_Total_Camion = sum(Camion_5, na.rm = TRUE),
+    Costo_Total_Pickup = sum(Pickup, na.rm = TRUE),
+    Costo_Total_Moto = sum(Moto, na.rm = TRUE))
+
+
+costos_por_origen <- data %>%
+  group_by(origen) %>%
+  summarise(
+    Costo_Total_Camion = sum(Camion_5, na.rm = TRUE),
+    Costo_Total_Pickup = sum(Pickup, na.rm = TRUE),
+    Costo_Total_Moto = sum(Moto, na.rm = TRUE))
+
+
+
+
+```
+## Analisis de centros de distribucion
+```{r}
+viajes_por_almacen <- data %>% 
+  group_by(origen) %>% 
+  summarise(viajes_totales = n()) %>% 
+  mutate(porcentaje = (viajes_totales/sum(viajes_totales)) * 100)
+
+#analizando los viajes del almacen 150224
+ viajes_150224 <- data %>% 
+   filter(origen == 150224) %>% 
+   #group_by(Cod) %>%
+  summarise(
+    Viajes_5_30 = sum(`5-30` == " x "),
+    Viajes_30_45 = sum(`30-45` == " x "),
+    Viajes_45_75 = sum(`45-75` == " x "),
+    Viajes_75_120 = sum(`75-120` == " x "),
+    Viajes_120_plus = sum(`+120` == " x ")
+  )
+ 
+ x1 <- sum(viajes_150224$Viajes_5_30)
+ x2 <- sum(viajes_150224$Viajes_30_45)
+ x3 <- sum(viajes_150224$Viajes_45_75)
+ x4 <- sum(viajes_150224$Viajes_75_120)
+ x5 <- sum(viajes_150224$Viajes_120_plus)
+ 
+ viajes_tot_150224 = x1 + x2 + x3 + x4 +x5
+ 
+ 
+ mayoria_viajes_a75120 = (x4/viajes_tot_150224) *100
+ 
+ #Analizando los viajes del almacen 150277
+ viajes_150277 <- data %>% 
+   filter(origen == 150277) %>% 
+   #group_by(Cod) %>%
+  summarise(
+    Viajes_5_30 = sum(`5-30` == " x "),
+    Viajes_30_45 = sum(`30-45` == " x "),
+    Viajes_45_75 = sum(`45-75` == " x "),
+    Viajes_75_120 = sum(`75-120` == " x "),
+    Viajes_120_plus = sum(`+120` == " x ")
+  )
+ 
+ x11 <- sum(viajes_150224$Viajes_5_30)
+ x22 <- sum(viajes_150224$Viajes_30_45)
+ x33 <- sum(viajes_150224$Viajes_45_75)
+ x44 <- sum(viajes_150224$Viajes_75_120)
+ x55 <- sum(viajes_150224$Viajes_120_plus)
+ 
+ viajes_tot_150277 = x11 + x22 + x33 + x44 +x55
+ 
+ 
+ viajes_a75120 = (x44/viajes_tot_150277) *100
+ 
+   
+```
+
+## Costos para los viajes que son del rango de 75-120
+
+```{r}
+
+costos_viajes <- data_camiones %>% 
+  filter(`75-120` == " x ")
+
+media <- mean(costos_viajes$Camion_5)
+
+
+costos_viajes_a75120 <- sum(costos_viajes$Camion_5)
+
+
+costos_viajes_2 <- data_pickups %>% 
+  filter(`75-120` == " x ")
+
+media2 <- mean(costos_viajes_2$Pickup)
+
+costos_viajes_2_2 <- sum(costos_viajes_2$Pickup)
+
+
+
+costos_viajes_3 <- data_motos %>%  
+  filter(`75-120` == " x ")
+
+media3 <- mean(costos_viajes_3$Moto)
+costos_viajes_3_3 <- sum(costos_viajes_3$Moto)
+
+media_final = mean(c(media,media2,media3))
+
+  ## Media final Q123.34
+costos_75120 = costos_viajes_a75120 + costos_viajes_2_2 + costos_viajes_3_3
+print(costos_75120)
+
+# Porcentaje de los costos sobre costos totales de los viajes a 75-120
+porcentaje_costos <- costos_75120 / costos_totales
+print(porcentaje_costos)
+
+
+
+
+nueva_utilidad <- ventas - costos_totales + 1852169
+
+crecimiento <-  ((nueva_utilidad - utilidad_neta)/ utilidad_neta) * 100
+print(crecimiento)
+
+```
+## costo promedio de los rangos 30-45  y  75-120 para camion y pick up
+```{r}
+
+costo_promedio_75120 <- mean(costos_viajes$Camion_5)
+
+c_promedio_75120 <- mean(costos_viajes_2$Pickup)
+
+camiones_filtrado <- data_camiones %>% 
+  filter(`30-45` == " x ")
+
+costo_promedio_3045 <- mean(camiones_filtrado$Camion_5)
+
+pickup_filtrado <- data_pickups %>% 
+  filter(`30-45` == " x ")
+  
+c_promedio_3045 <- mean(pickup_filtrado$Pickup)
+
+```
+
+
+## Analizando las tarifas
+
+```{r}
+
+data$Fecha <- as.Date(data$Fecha)
+
+
+data <- data %>%
+  mutate(Mes = format(Fecha, "%m"))
+
+# Calcular la tarifa promedio por tipo de servicio y mes
+tarifa_promedio <- data %>%
+  group_by(Mes,Cod) %>%
+  summarise(Tarifa_Promedio = mean(factura, na.rm = TRUE))
+
+tarifa_promedio_final <- tarifa_promedio %>% 
+  group_by(Mes) %>% 
+  summarise(Tarifa_final = mean(Tarifa_Promedio))
+
+## Viendo graficamente la ta
+grafico_tarifas_promedio <- ggplot(tarifa_promedio_final, aes(x = Mes, y = Tarifa_final, fill = "green")) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Mes", y = "Tarifa Promedio") +
+  ggtitle("Tarifa Promedio a lo largo de cada Mes") +
+  theme_minimal() +
+  scale_fill_manual(values = "lightgreen")
+
+print(grafico_tarifas_promedio)
+
+mean(tarifa_promedio_final$Tarifa_final)
+
+
+viajes_promedio <- data %>% 
+  group_by(Mes) %>% 
+  summarise(viajes_por_mes = n())
+
+grafica_viajes_promedio <- ggplot(viajes_promedio, aes(x = Mes, y = viajes_por_mes, fill = "blue")) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Mes", y = "Tarifa Promedio") +
+  ggtitle("Viajes por mes a lo largo del 2017") +
+  theme_minimal() +
+  scale_fill_manual(values = "lightblue")
+
+print(grafica_viajes_promedio)
+
+
+
+```
+
+
+
+
+
