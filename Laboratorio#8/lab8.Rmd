@@ -1,0 +1,319 @@
+---
+title: "Lab8"
+author: "Christian Sandoval"
+date: "10/29/2023"
+output: rmarkdown::github_document
+---
+
+
+## Laboratorio#8 Feature Engineering
+
+Data Wrangling 2023
+Christian Sandoval - 20210393
+
+
+```{r cars}
+library(dplyr)
+library(readr)
+library(readxl)
+library(caret)
+```
+
+## Leyendo la data
+
+
+```{r}
+#Data que tiene missing data
+data <- read_csv("titanic_MD.csv") 
+
+# Data completa para comparar
+
+data_completa <- read_csv("titanic.csv")
+
+```
+
+## Reporte de Missing Data y Columnas completas
+```{r}
+
+ missing_data <- colSums(is.na(data))
+columnas_con_faltantes <- names(missing_data[missing_data > 0])
+columnas_completas <- names(missing_data[missing_data == 0])
+
+
+#Resumen de todas las columnas
+print(missing_data)
+
+#Columnas que tienen NA
+print(columnas_con_faltantes)
+
+
+#Columnas que estan completas
+# Aqui tenemos que tomar en cuenta que la columna de 'Sex' esta completa pero hay campos que tienen un "?"
+print(columnas_completas)
+
+
+# Vemos los complete cases de toda la data
+
+complete.cases(data) %>% table()
+
+# Podemos ver que de los 183 registros, solo tenemos 136 que estan completos, esto incluye los registros que tienen el "?" en la columna
+# de sex
+
+```
+
+## Especificamos como vamos a trabajar con cada columna de missing data
+
+Age: Imputacion por mediana, porque de esta forma, no tendriamos problemas con valores atipicos que puedan alterar
+la distribucion de los datos como podria suceder con la media.
+
+SibSp: Imputacion por mediana, porque de esta forma, no tendriamos problemas con valores atipicos que puedan alterar
+la distribucion de los datos como podria suceder con la media.
+
+Parch: Imputacion por media, al ser padres/hijos sabemos que la probabilidad de datos atipicos es muy baja por lo que una medida
+como la media nos podria servir
+
+Fare: Al saber que tenemos diferentes clases economicas para 'Fare' se podria hacer una imputacion por la media segun cada 'Pclass' que tengamos.
+
+Embarked: Al ser una columna con variables categoricas, podriamos utilizar imputacion por la moda de esta forma llenariamos los missing values con la variable que mas sale en esta columna que en este caso seria por el puerto que mas embarcaron.
+
+
+## TRABAJAMOS LAS COLUMNAS CON MISSSING VALUES
+
+```{r}
+
+# Econtrar moda para columna categorica
+find.mode_categoria <- function() {
+
+  embarked <- data %>% 
+    group_by(Embarked) %>% 
+    summarise(count = n()) %>%
+     arrange(desc(count))
+  
+  moda <- embarked$Embarked[1]
+  
+  return(moda)
+    
+}
+
+#Encontrar moda para columna numerica
+find.mode <- function(columna) {
+
+  moda <- names(sort(table(columna), decreasing = TRUE))[1]
+  
+  return(moda)
+  
+    
+}
+
+```
+
+
+## Con imputacion general
+```{r}
+
+#Para 'age'
+data$Age[is.na(data$Age)] <- mean(data$Age , na.rm = TRUE)
+data$Age[is.na(data$Age)] <- median(data$Age , na.rm = TRUE)
+data$Age[is.na(data$Age)] <- find.mode(data$Age)
+
+#Para 'SibSp'
+
+data$SibSp[is.na(data$SibSp)] <- mean(data$SibSp, na.rm = TRUE)
+data$SibSp[is.na(data$SibSp)] <- median(data$SibSp, na.rm = TRUE)
+data$SibSp[is.na(data$SibSp)] <- find.mode(data$SibSp)
+
+# Para 'Parch'
+
+data$Parch[is.na(data$Parch)] <- mean(data$Parch, na.rm = TRUE)
+data$Parch[is.na(data$Parch)] <- median(data$Parch, na.rm = TRUE)
+data$Parch[is.na(data$Parch)] <- find.mode(data$Parch)
+
+# Para 'Fare'
+data$Fare[is.na(data$Fare)] <- mean(data$Fare , na.rm = TRUE)
+data$Fare[is.na(data$Fare)] <- median(data$Fare , na.rm = TRUE)
+data$Fare[is.na(data$Fare)] <- find.mode(data$Fare)
+
+# Para 'embarked'
+data$Embarked[is.na(data$Embarked)] <- find.mode_categoria()
+```
+
+## Con Linear Regression
+```{r}
+
+#Para Age
+
+known_age <- data[complete.cases(data$Age), ]
+missing_age <- data[!complete.cases(data$Age), ]
+
+
+modelo_edad <- lm(Age ~ Pclass + Sex + SibSp + Parch + Fare + Embarked, data = known_age)
+predicciones_edad <- predict(modelo_edad, newdata = missing_age)
+
+
+data$Age[!complete.cases(data$Age)] <- predicciones_edad
+
+
+#Para SibSp
+
+known_sib <- subset(data, !is.na(SibSp))  
+missing_sib <- subset(data, is.na(SibSp))  
+
+
+
+
+modelo_sib <-lm(SibSp ~ Pclass + Sex + Age + Parch + Fare + Embarked, data = known_sib)
+predicciones_sib <- predict(modelo_sib, newdata = missing_sib)
+
+
+data$SibSp[is.na(data$SibSp)] <- predicciones_sib
+
+#Para Parch
+
+known_parch <- data[complete.cases(data), ]
+missing_parch <- data[!complete.cases(data), ]
+
+
+modelo_parch <- lm(Parch ~ Age + Fare, data = known_parch)
+predicciones_parch <- predict(modelo_parch, newdata = missing_parch)
+
+data$Parch[!complete.cases(data$Parch)] <- predicciones_parch
+
+#Para Fare
+
+data_entrenamiento <- data %>% filter(!is.na(Fare))
+modelo_fare <- lm(Fare ~ Pclass + Sex + Age + SibSp + Parch + Embarked, data = data_entrenamiento)
+  
+
+data_prediccion <- data %>% filter(is.na(Fare))
+predicciones_fare <- predict(modelo_fare, newdata = data_prediccion)
+
+
+data$Fare[is.na(data$Fare)] <- predicciones_fare
+
+
+```
+## Outliers
+```{r}
+#Para Age
+x <-  2
+
+lower_age <- mean(data$Age, na.rm = T) -  (sd(data$Age, na.rm = T) * x)
+upper_age <- mean(data$Age, na.rm = T) +  (sd(data$Age, na.rm = T) * x)
+
+data[(data$Age >= lower_age) & (data$Age <= upper_age) & (!is.na(data$Age)), ]
+
+#Para SibSp
+
+x2 <- 3
+
+lower_sib <- mean(data$SibSp, na.rm = T) -  (sd(data$SibSp, na.rm = T) * x2)
+upper_sib <- mean(data$SibSp, na.rm = T) +  (sd(data$SibSp, na.rm = T) * x2)
+
+data[(data$SibSp >= lower_sib) & (data$SibSp <= upper_sib) & (!is.na(data$SibSp)), ]
+
+#Para Parch 
+
+x3 <- 2
+lower_parch<- mean(data$Parch, na.rm = T) -  (sd(data$Parch, na.rm = T) * x3)
+upper_parch <- mean(data$Parch, na.rm = T) +  (sd(data$Parch, na.rm = T) * x3)
+
+data[(data$Parch >= lower_parch) & (data$Parch <= upper_parch) & (!is.na(data$Parch)), ]
+
+#Para Fare
+
+x4 <- 2
+lower_fare<- mean(data$Fare, na.rm = T) -  (sd(data$Fare, na.rm = T) * x4)
+upper_fare <- mean(data$Fare, na.rm = T) +  (sd(data$Fare, na.rm = T) * x4)
+
+data[(data$Fare >= lower_fare) & (data$Fare <= upper_fare) & (!is.na(data$Fare)), ]
+
+
+
+
+```
+## Comparacion de los metodos utilizados
+
+```{r}
+
+summary(data_completa$Age)
+summary(known_age$Age)
+
+summary(data_completa$SibSp)
+summary(known_sib$SibSp)
+
+summary(data_completa$Parch)
+summary(known_parch)
+
+summary(data_completa$Fare)
+summary(data_entrenamiento$Fare)
+
+
+data_embarked <- data_completa %>% 
+   group_by(Embarked) %>% 
+    summarise(count = n()) %>%
+     arrange(desc(count))
+
+
+data_conmoda <- data %>% 
+   group_by(Embarked) %>% 
+    summarise(count = n()) %>%
+     arrange(desc(count))
+
+
+```
+
+Para la columna de Age , la mejor forma fue por medio de la imputacion por mediana, manteniendo una distribucion constante en la variable 
+sin presentar algun sesgo. Evitando datos atipicos
+
+
+Para las columnas de SibSp y Parch , el mejor approach fue la regresion lineal, al tener mas informacion con la cual establecer el numero de SibSp/Parch sin solo sacar una media o mediana o moda de esta columna
+
+Para Fare, igual la regresion lineal fue el mejor acercamiento, ya que podiamos establecer cuales variables tenian mas peso para predecir ese valor.
+
+Para Embarked, sin ninguna duda, el mejor metodo fue la imputacion por moda, al ser una variable categorica , podiamos usar este metodo, que dio resultados muy parecidos comparado con el actual
+
+## Conclusiones
+
+Media, mediana, moda: Estas son estrategias comunes para imputar valores faltantes. NUestra eleccion entre ellas depende de la naturaleza de los datos y el impacto en el análisis. La media es sensible a valores extremos, la mediana es más robusta y la moda es útil para datos categóricos o discretos.
+
+Media, mediana, moda: Estas son estrategias comunes para imputar valores faltantes. La elección entre ellas depende de la naturaleza de los datos y el impacto en el análisis. La media es sensible a valores extremos, la mediana es más robusta y la moda es útil para datos categóricos o discretos.
+
+La elección de la estrategia de imputación debe basarse en el contexto del problema y la naturaleza de los datos. Es crucial validar cualquier enfoque de imputación utilizado.
+
+
+
+## Normalizando data
+```{r}
+# Standarization 
+data_stand <- data %>% 
+  mutate(New_age =  ((Age - mean(Age, na.rm = TRUE)) /sd(Age , na.rm= TRUE)))  %>% 
+  mutate(New_sib =  ((SibSp - mean(SibSp, na.rm = TRUE)) /sd(SibSp,na.rm= TRUE)))  %>% 
+  mutate(New_parch =  ((Parch - mean(Parch, na.rm = TRUE)) /sd(Parch,na.rm= TRUE)))  %>% 
+   mutate(New_Fare =  ((Fare - mean(Fare, na.rm = TRUE)) /sd(Fare,na.rm= TRUE)))  %>% 
+  select(Age, New_age, SibSp, New_sib, Parch, New_parch, Fare, New_Fare)
+  
+
+#MinMaxScalling
+
+data_minmax <- data %>% 
+  mutate(New_age = ((Age - min(Age, na.rm = T))/(max(Age, na.rm = T) - min(Age, na.rm = T)))) %>% 
+  mutate(New_sib = ((SibSp - min(SibSp, na.rm = T))/(max(SibSp, na.rm = T) - min(SibSp, na.rm = T)))) %>% 
+  mutate(New_parch = ((Parch - min(Parch, na.rm = T))/(max(Parch, na.rm = T) - min(Parch, na.rm = T)))) %>% 
+  mutate(New_fare = ((Fare - min(Fare, na.rm = T))/(max(Fare, na.rm = T) - min(Fare, na.rm = T)))) %>% 
+  select(Age, New_age, SibSp, New_sib, Parch, New_parch, Fare, New_fare)
+
+## Log
+data_log <- data %>% 
+  mutate(New_age = log(Age)) %>% 
+  mutate(New_sib = log(SibSp)) %>% 
+  mutate(New_parch = log(Parch)) %>% 
+  mutate(New_fare = log(Fare)) %>% 
+  select(Age, New_age, SibSp, New_sib, Parch, New_parch, Fare, New_fare) 
+
+```
+
+
+
+
+
+
