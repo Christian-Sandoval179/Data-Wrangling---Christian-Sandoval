@@ -1,30 +1,61 @@
----
-title: "Lab#5"
-output: rmarkdown::github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+Lab#5
+================
 
 ## R Markdown
 
-Christian Sandoval
-Data Wrangling 2023
+Christian Sandoval Data Wrangling 2023
 
-```{r}
+``` r
 library(lubridate)
-library(dplyr)
-library(readr)
-library(readxl)
-library(nycflights13)
-
 ```
+
+    ## Warning: package 'lubridate' was built under R version 4.1.3
+
+    ## 
+    ## Attaching package: 'lubridate'
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     date, intersect, setdiff, union
+
+``` r
+library(dplyr)
+```
+
+    ## Warning: package 'dplyr' was built under R version 4.1.3
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
+library(readr)
+```
+
+    ## Warning: package 'readr' was built under R version 4.1.3
+
+``` r
+library(readxl)
+```
+
+    ## Warning: package 'readxl' was built under R version 4.1.3
+
+``` r
+library(nycflights13)
+```
+
+    ## Warning: package 'nycflights13' was built under R version 4.1.3
 
 ## Parte 1
 
-```{r}
-
+``` r
 #  Calculamos los días en un Synodic Month
 synodic_month_days <- 29 + (12/24) + (44/60/24) + (3/60/60/24) 
 
@@ -42,13 +73,13 @@ fecha_eclipse <- ultimo_eclipse + total_de_dias * 24 * 60 * 60
 
 # Ponemos la fecha en el mismo formato del ultimo eclipse
 format(fecha_eclipse, format = "%d de %B de %Y a las %H:%M:%S")
-
-
-
 ```
 
+    ## [1] "02 de September de 2035 a las 02:09:49"
+
 ## Parte 2
-```{r}
+
+``` r
 data <- read_xlsx("data.xlsx")
 
 colnames(data) <- c("fecha_creacion", "hora_creacion", "callerID", "Cod", "email", "SMS", "call", "fecha_final", "hora_final")
@@ -66,7 +97,16 @@ data <- data %>%
     fecha_final = dmy(fecha_final),
     fecha_final_origen = as.Date(as.numeric(fecha_final_origen), origin = "1899-12-30")
   )
+```
 
+    ## Warning: There were 4 warnings in `mutate()`.
+    ## The first warning was:
+    ## i In argument: `fecha_creacion = dmy(fecha_creacion)`.
+    ## Caused by warning:
+    ## !  104237 failed to parse.
+    ## i Run `dplyr::last_dplyr_warnings()` to see the 3 remaining warnings.
+
+``` r
 data <- data %>% 
   mutate(
     fecha_creacion_f = coalesce(fecha_creacion_origen, fecha_creacion),
@@ -87,15 +127,32 @@ data <- data %>%
 resultado <- data %>%
   group_by(Cod, mes) %>%
   summarise(cantidad_llamadas = n())
+```
 
+    ## `summarise()` has grouped output by 'Cod'. You can override using the `.groups`
+    ## argument.
 
+``` r
 resultado <- resultado %>%
   group_by(Cod) %>%
   filter(cantidad_llamadas == max(cantidad_llamadas))
 
 print(resultado)
+```
 
+    ## # A tibble: 7 x 3
+    ## # Groups:   Cod [7]
+    ##   Cod                            mes cantidad_llamadas
+    ##   <chr>                        <dbl>             <int>
+    ## 1 0                                7              1463
+    ## 2 Actualización de Información     5              1691
+    ## 3 Cancelaciones                    3              4092
+    ## 4 Cobros                           1               688
+    ## 5 Consultas                       10             10790
+    ## 6 Empresarial                     10              3136
+    ## 7 Otros/Varios                     1              1129
 
+``` r
 ## Vemos el dia mas ocupado de la semana
 
 
@@ -113,8 +170,20 @@ dia_mas_ocupado <- resultado2 %>%
   select(dia_semana)
 
 print(resultado2)
+```
 
+    ## # A tibble: 7 x 2
+    ##   dia_semana cantidad_llamadas
+    ##   <chr>                  <int>
+    ## 1 Friday                 37409
+    ## 2 Monday                 37501
+    ## 3 Saturday               37614
+    ## 4 Sunday                 38254
+    ## 5 Thursday               37726
+    ## 6 Tuesday                37710
+    ## 7 Wednesday              37511
 
+``` r
 ## Mes mas ocupado
 
 
@@ -127,8 +196,11 @@ mes_mas_ocupado <- resultado3 %>%
   select(mes)
 
   paste0("El mes mas ocupado es el mes: ", mes_mas_ocupado)
-  
-  
+```
+
+    ## [1] "El mes mas ocupado es el mes: 3"
+
+``` r
 ## Existe una gran concentracion de llamadas en el mes de Octubre
   
   
@@ -140,7 +212,11 @@ mes_mas_ocupado <- resultado3 %>%
   promedio_duracion <- mean(data$duracion_llamada_minutos)
     
   paste0("La duracion promedio de llamada es de: ", promedio_duracion)
-  
+```
+
+    ## [1] "La duracion promedio de llamada es de: 14.557903930131"
+
+``` r
 ## Tabla de frecuencias
   
   tabla_f <- table(data$duracion_llamada_minutos)
@@ -149,19 +225,51 @@ mes_mas_ocupado <- resultado3 %>%
   colnames(tabla_df) <- c("Duracion_Llamada", "Frecuencia")
   
   print(tabla_df)
+```
 
+    ##    Duracion_Llamada Frecuencia
+    ## 1                 0        221
+    ## 2                 1        211
+    ## 3                 2        173
+    ## 4                 3        195
+    ## 5                 4        193
+    ## 6                 5        184
+    ## 7                 6        194
+    ## 8                 7        197
+    ## 9                 8        212
+    ## 10                9        166
+    ## 11               10        190
+    ## 12               11        197
+    ## 13               12        169
+    ## 14               13        163
+    ## 15               14        203
+    ## 16               15        188
+    ## 17               16        181
+    ## 18               17        178
+    ## 19               18        186
+    ## 20               19        190
+    ## 21               20        179
+    ## 22               21        205
+    ## 23               22        175
+    ## 24               23        192
+    ## 25               24        186
+    ## 26               25        174
+    ## 27               26        157
+    ## 28               27        173
+    ## 29               28        158
+    ## 30               29        171
+    ## 31               30        164
+
+``` r
   ## Como comentario adicional podemos ver que la mayor frecuencia se concentra en su media que son los 14 minutos promedio por llamada
   
   
 ##
-  
 ```
 
 ## Parte 3
-```{r}
 
-
-
+``` r
 obtener_signo <- function(fecha_nacimiento) {
   
   dia <- day(fecha_nacimiento)
@@ -201,17 +309,13 @@ fecha_nacimiento <- as.Date("2002-04-04")
 signo_zodiacal <- obtener_signo(fecha_nacimiento)
 
 paste0(" Tu signo zodiacal es: " , signo_zodiacal , " dada tu fecha de nacimiento: " , fecha_nacimiento)
-
-
-
-
-
 ```
 
+    ## [1] " Tu signo zodiacal es: Aries dada tu fecha de nacimiento: 2002-04-04"
 
 ## Parte 4
-```{r}
 
+``` r
 flights <- flights
 
 flights <- flights %>% 
@@ -226,9 +330,4 @@ flights <- flights %>%
 
 flights <- flights %>% 
   mutate(delay_total = dep_delay + arr_delay)
-
-
-
 ```
-
-
